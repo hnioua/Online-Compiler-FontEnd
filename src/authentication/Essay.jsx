@@ -341,7 +341,8 @@ export default function Essay() {
                         border: "1px solid #374151",
                         borderRadius: "20px",
                         textAlign: "center",
-                        minHeight: "300px",
+                        width: "100%", // occupe la largeur dispo
+                        height: "320px", // taille fixe en hauteur
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "space-between",
