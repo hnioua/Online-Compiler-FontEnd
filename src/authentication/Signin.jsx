@@ -1,170 +1,261 @@
-import React, { useState } from "react"
-import Layout from "./layout"
-import { Alert, Snackbar, Typography } from "@mui/material"
-import Input from "../components/Input"
-import LoadingButton from "./components/LoadingButton"
-import { Link, useNavigate } from "react-router-dom"
-import { useImmer } from "use-immer"
-import axios from "axios"
+import React, { useState } from "react";
+import Layout from "./layout";
+import {
+  Alert,
+  Snackbar,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Container,
+} from "@mui/material";
+import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
-const Signin = () => {
-  const router = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [submit, setSubmit] = useState(false)
-  const [toast, setToast] = useImmer({
-    open: false,
-    message: "",
-  })
-  const [formData, setFormData] = useImmer({
-    email: "",
-    password: "",
-  })
+// Animations réutilisées
+const pageVariants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: { duration: 0.6, staggerChildren: 0.2 },
+  },
+};
 
-  // Sign in Submit funtion
-  async function SignIn() {
-    setLoading(true)
-    if (formData.email == "admin@gmail.com") {
-      router("/admin")
-      return
-    }
+const formVariants = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+};
+
+const buttonVariants = {
+  initial: { opacity: 0, y: 30 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+  hover: {
+    scale: 1.05,
+    y: -2,
+    boxShadow: "0 10px 25px rgba(92, 92, 254, 0.3)",
+    transition: { duration: 0.2 },
+  },
+  tap: { scale: 0.98 },
+};
+
+// Styles communs
+const commonStyles = {
+  fontFamily:
+    "'JetBrains Mono', 'Fira Code', 'Source Code Pro', 'Monaco', 'Consolas', monospace",
+  letterSpacing: "0.5px",
+};
+
+const headingStyles = {
+  ...commonStyles,
+  fontWeight: 700,
+  background: "linear-gradient(135deg, #d9e3ea 0%, #a8b5c2 100%)",
+  backgroundClip: "text",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+};
+
+export default function Signin() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ open: false, message: "" });
+
+  const handleChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  async function handleSignin(e) {
+    e.preventDefault();
+    setLoading(true);
+
     if (
-      formData.email == "" ||
-      formData.email.indexOf("@") == -1 ||
-      formData.email.indexOf(".") == -1 ||
-      formData.password == ""
+      !formData.email.includes("@") ||
+      !formData.email.includes(".") ||
+      !formData.password
     ) {
-      setLoading(false)
-      return
+      setToast({
+        open: true,
+        message: "Veuillez remplir correctement les champs",
+      });
+      setLoading(false);
+      return;
     }
+
     try {
-      const response = await axios.post(
+      const res = await axios.post(
         "http://localhost:5000/Auth/signin",
         formData
-      )
-      if (response.data == "ok") {
-        console.log("session")
-        sessionStorage.setItem("email", formData.email)
-        router("/ide", { replace: true })
+      );
+      if (res.data === "ok") {
+        sessionStorage.setItem("email", formData.email);
+        navigate("/ide", { replace: true });
       }
-      setLoading(false)
-    } catch (error) {
-      console.log(error)
-      if (error.response?.status == 500 || error?.code == "ERR_NETWORK") {
-        setToast((draft) => {
-          draft.open = true
-          draft.message = "serveur inaccessible lancer le serveur"
-        })
+    } catch (err) {
+      if (err.response?.status === 501) {
+        setToast({ open: true, message: "Email ou mot de passe incorrect" });
+      } else {
+        setToast({
+          open: true,
+          message: "Erreur serveur ou connexion impossible",
+        });
       }
-      if (error.response?.status == 501) {
-        setToast((draft) => {
-          draft.open = true
-          draft.message = "Email ou password incorrect"
-        })
-      }
-      setLoading(false)
     }
+    setLoading(false);
   }
-  // close the Toast
-  const handleClose = () => {
-    setToast((draft) => {
-      draft.open = false
-      draft.message = ""
-    })
-  }
+
   return (
-    <>
-      <Layout>
-        <div className='mt-28 pb-14 text-[#d9e3ea] text-center flex flex-col items-center max-w-3xl'>
-          <Typography
-            variant='h3'
-            gutterBottom
-            sx={{ fontWeight: "800", fontFamily: "'Inter', sans-serif" }}
-          >
-            Routeur performant, êtes-vous prêt à coder en langage C ?
-          </Typography>
-          <div className='w-96 flex flex-col mt-6 gap-5'>
-            <p className='my-4 flex text-center items-center justify-center after:border-t after:w-full before:border-t before:w-full before:border-[#3d4144] after:border-[#3d4144] w-full'>
-              <span className='w-full px-2 min-w-fit'>
-                {" "}
-                Prêts pour la connexion ? Identifiez-vous !
-              </span>
-            </p>
-            <Input
-              helperText='Enter votre email'
-              label='Email'
-              variant='outlined'
-              type='email'
-              fullWidth
-              value={formData.email}
-              onChange={(e) => {
-                setFormData((draft) => {
-                  draft.email = e.target.value
-                })
-              }}
-              error={
-                !submit
-                  ? false
-                  : (formData.email.length == 0 ||
-                      formData.email.indexOf("@") == -1 ||
-                      formData.email.indexOf(".") == -1) &&
-                    true
-              }
-            />
-            <Input
-              helperText='enter un mot de pass'
-              label='Mot de pass'
-              variant='outlined'
-              type='password'
-              fullWidth
-              autoComplete='none'
-              value={formData.password}
-              onChange={(e) => {
-                setFormData((draft) => {
-                  draft.password = e.target.value
-                })
-              }}
-              error={!submit ? false : formData.password.length == 0 && true}
-            />
-            <LoadingButton
-              size='large'
-              variant='contained'
-              loading={loading}
-              disabled={loading}
-              fullWidth
-              onClick={() => {
-                setSubmit(true)
-                SignIn()
+    <Layout>
+      <motion.div
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        className="mt-28 min-h-screen text-[#d9e3ea] flex items-center justify-center"
+      >
+        <Container maxWidth="sm">
+          <motion.div variants={formVariants}>
+            <Box
+              component="form"
+              onSubmit={handleSignin}
+              sx={{
+                p: 5,
+                backgroundColor: "#1f2937",
+                border: "1px solid #374151",
+                borderRadius: "20px",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
               }}
             >
-              Sign in
-            </LoadingButton>
-            <p className='text-[#8e998f]'>
-              N'avez-vous pas de compte ?{" "}
-              <Link to={"/signup"} className='text-blue-700'>
-                Sign up
-              </Link>
-            </p>
-          </div>
-        </div>
-      </Layout>
+              <Typography
+                variant="h4"
+                textAlign="center"
+                sx={{ ...headingStyles, mb: 2 }}
+              >
+                Connectez-vous
+              </Typography>
+
+              <TextField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: "#d9e3ea",
+                    ...commonStyles,
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#9ca3af",
+                    ...commonStyles,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#374151",
+                      borderRadius: "12px",
+                      borderWidth: "2px",
+                    },
+                    "&:hover fieldset": { borderColor: "#5c5cfe" },
+                    "&.Mui-focused fieldset": { borderColor: "#5c5cfe" },
+                  },
+                }}
+              />
+
+              <TextField
+                label="Mot de passe"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: "#d9e3ea",
+                    ...commonStyles,
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#9ca3af",
+                    ...commonStyles,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#374151",
+                      borderRadius: "12px",
+                      borderWidth: "2px",
+                    },
+                    "&:hover fieldset": { borderColor: "#5c5cfe" },
+                    "&.Mui-focused fieldset": { borderColor: "#5c5cfe" },
+                  },
+                }}
+              />
+
+              <motion.div
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    ...commonStyles,
+                    textTransform: "none",
+                    background:
+                      "linear-gradient(135deg, #5c5cfe 0%, #4a4bff 100%)",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    borderRadius: "16px",
+                    py: 1.5,
+                    mt: 2,
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #4a4bff 0%, #3939ff 100%)",
+                    },
+                  }}
+                >
+                  {loading ? "Chargement..." : "Se connecter"}
+                </Button>
+              </motion.div>
+
+              <Typography
+                textAlign="center"
+                sx={{ ...commonStyles, color: "#9ca3af", mt: 2 }}
+              >
+                Pas encore de compte ?{" "}
+                <Link to="/signup" style={{ color: "#5c5cfe" }}>
+                  Créez-en un
+                </Link>
+              </Typography>
+            </Box>
+          </motion.div>
+        </Container>
+      </motion.div>
+
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         open={toast.open}
-        message={toast.message}
         autoHideDuration={3000}
-        onClose={handleClose}
+        onClose={() => setToast({ open: false, message: "" })}
       >
-        <Alert
-          onClose={handleClose}
-          severity='error'
-          variant='filled'
-          sx={{ width: "100%" }}
-        >
+        <Alert severity="error" variant="filled" sx={{ width: "100%" }}>
           {toast.message}
         </Alert>
       </Snackbar>
-    </>
-  )
+    </Layout>
+  );
 }
-
-export default Signin

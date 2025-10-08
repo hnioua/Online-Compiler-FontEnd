@@ -1,220 +1,318 @@
-import { Alert, Snackbar, Typography } from "@mui/material"
-import axios from "axios"
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { useImmer } from "use-immer"
-import Layout from "./layout"
-import Input from "../components/Input"
-import LoadingButton from "./components/LoadingButton"
+import {
+  Alert,
+  Snackbar,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Container,
+} from "@mui/material";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import axios from "axios";
+import Layout from "./layout";
 
-const Signup = () => {
-  const router = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [submit, setSubmit] = useState(false)
-  const [toast, setToast] = useImmer({
-    open: false,
-    message: "",
-  })
-  const [formData, setFormData] = useImmer({
+// Animations réutilisées
+const pageVariants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: { duration: 0.6, staggerChildren: 0.2 },
+  },
+};
+
+const formVariants = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+};
+
+const buttonVariants = {
+  initial: { opacity: 0, y: 30 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+  hover: {
+    scale: 1.05,
+    y: -2,
+    boxShadow: "0 10px 25px rgba(92, 92, 254, 0.3)",
+    transition: { duration: 0.2 },
+  },
+  tap: { scale: 0.98 },
+};
+
+// Styles communs
+const commonStyles = {
+  fontFamily:
+    "'JetBrains Mono', 'Fira Code', 'Source Code Pro', 'Monaco', 'Consolas', monospace",
+  letterSpacing: "0.5px",
+};
+
+const headingStyles = {
+  ...commonStyles,
+  fontWeight: 700,
+  background: "linear-gradient(135deg, #d9e3ea 0%, #a8b5c2 100%)",
+  backgroundClip: "text",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+};
+
+export default function Signup() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
     user: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
+  });
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ open: false, message: "" });
 
-  // Sign up Submit funtion
-  async function SignUp() {
-    setLoading(true)
-    if (
-      formData.user == "" ||
-      formData.email == "" ||
-      formData.email.indexOf("@") == -1 ||
-      formData.email.indexOf(".") == -1 ||
-      formData.password == "" ||
-      formData.confirmPassword == ""
-    ) {
-      setLoading(false)
-      return
+  const handleChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  async function handleSignup(e) {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!formData.user || !formData.email.includes("@") || !formData.password) {
+      setToast({
+        open: true,
+        message: "Veuillez remplir correctement tous les champs",
+      });
+      setLoading(false);
+      return;
     }
-    if (formData.password != formData.confirmPassword) {
-      setToast((draft) => {
-        draft.open = true
-        draft.message = "les mots de passes ne sont pas identiques"
-      })
-      setLoading(false)
-      return
+    if (formData.password !== formData.confirmPassword) {
+      setToast({
+        open: true,
+        message: "Les mots de passe ne correspondent pas",
+      });
+      setLoading(false);
+      return;
     }
+
     try {
-      const response = await axios.post(
+      const res = await axios.post(
         "http://localhost:5000/Auth/signup",
         formData
-      )
-      console.log(response.data)
-      if (response.data == "ok") {
-        router("/signin")
+      );
+      if (res.data === "ok") navigate("/signin");
+    } catch (err) {
+      if (err.response?.status === 501) {
+        setToast({ open: true, message: "Email déjà utilisé" });
+      } else {
+        setToast({ open: true, message: "Erreur serveur" });
       }
-      setLoading(false)
-    } catch (error) {
-      if (error.response?.status == 500) {
-        setToast((draft) => {
-          draft.open = true
-          draft.message = "serveur inaccessible lancer le serveur"
-        })
-      }
-      if (error.response?.status == 501) {
-        setToast((draft) => {
-          draft.open = true
-          draft.message = "Email deja utiliser"
-        })
-      }
-      setLoading(false)
-      console.log(error)
     }
+    setLoading(false);
   }
-  // close the Toast
-  const handleClose = () => {
-    setToast((draft) => {
-      draft.open = false
-      draft.message = ""
-    })
-  }
+
   return (
-    <>
-      <Layout>
-        <div className='mt-28 pb-16 text-[#d9e3ea] text-center flex flex-col items-center max-w-3xl'>
-          <Typography
-            variant='h3'
-            gutterBottom
-            sx={{ fontWeight: "800", fontFamily: "'Inter', sans-serif" }}
-          >
-            Bienvenue. Nous existons pour faciliter l’apprentissage du Language
-            C.
-          </Typography>
-          <div className='w-96 flex flex-col mt-6 gap-5'>
-            <p className='my-4 flex text-center items-center justify-center after:border-t after:w-full before:border-t before:w-full before:border-[#3d4144] after:border-[#3d4144] w-full'>
-              <span className='w-full px-2 min-w-fit'>
-                {" "}
-                Inscrivez-vous avec votre adresse e-mail
-              </span>
-            </p>
-            <Input
-              helperText='Enter votre Nom et Prenom'
-              label='Nom complet'
-              variant='outlined'
-              fullWidth
-              autoComplete='none'
-              value={formData.user}
-              onChange={(e) =>
-                setFormData((draft) => {
-                  draft.user = e.target.value
-                })
-              }
-              error={!submit ? false : formData.user.length == 0 && true}
-            />
-            <Input
-              helperText='Enter votre email'
-              label='Email'
-              variant='outlined'
-              type='email'
-              fullWidth
-              autoComplete='none'
-              value={formData.email}
-              onChange={(e) => {
-                setFormData((draft) => {
-                  draft.email = e.target.value
-                })
-              }}
-              error={
-                !submit
-                  ? false
-                  : (formData.email.length == 0 ||
-                      formData.email.indexOf("@") == -1 ||
-                      formData.email.indexOf(".") == -1) &&
-                    true
-              }
-            />
-            <Input
-              helperText='enter un mot de pass'
-              label='Mot de pass'
-              variant='outlined'
-              type='password'
-              fullWidth
-              autoComplete='none'
-              value={formData.password}
-              onChange={(e) => {
-                setFormData((draft) => {
-                  draft.password = e.target.value
-                })
-              }}
-              error={
-                !submit
-                  ? false
-                  : formData.password.length == 0
-                  ? true
-                  : formData.password != formData.confirmPassword
-              }
-            />
-            <Input
-              helperText='confirmer le mot de pass'
-              label='confirmation du mot de pass'
-              variant='outlined'
-              type='password'
-              fullWidth
-              autoComplete='none'
-              value={formData.confirmPassword}
-              onChange={(e) => {
-                setFormData((draft) => {
-                  draft.confirmPassword = e.target.value
-                })
-              }}
-              error={
-                !submit
-                  ? false
-                  : formData.confirmPassword.length == 0
-                  ? true
-                  : formData.password != formData.confirmPassword
-              }
-            />
-            <LoadingButton
-              size='large'
-              variant='contained'
-              loading={loading}
-              disabled={loading}
-              fullWidth
-              onClick={() => {
-                setSubmit(true)
-                SignUp()
+    <Layout>
+      <motion.div
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        className="mt-28 min-h-screen text-[#d9e3ea] flex items-center justify-center"
+      >
+        <Container maxWidth="sm">
+          <motion.div variants={formVariants}>
+            <Box
+              component="form"
+              onSubmit={handleSignup}
+              sx={{
+                p: 5,
+                backgroundColor: "#1f2937",
+                border: "1px solid #374151",
+                borderRadius: "20px",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
               }}
             >
-              Sign up
-            </LoadingButton>
-            <p className='text-[#8e998f]'>
-              Vous utilisez déjà CodeX ?{" "}
-              <Link to={"/signin"} className='text-blue-700'>
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </div>
-      </Layout>
+              <Typography
+                variant="h4"
+                textAlign="center"
+                sx={{ ...headingStyles, mb: 2 }}
+              >
+                Créez votre compte
+              </Typography>
+
+              <TextField
+                label="Nom complet"
+                name="user"
+                value={formData.user}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: "#d9e3ea",
+                    ...commonStyles,
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#9ca3af",
+                    ...commonStyles,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#374151",
+                      borderRadius: "12px",
+                      borderWidth: "2px",
+                    },
+                    "&:hover fieldset": { borderColor: "#5c5cfe" },
+                    "&.Mui-focused fieldset": { borderColor: "#5c5cfe" },
+                  },
+                }}
+              />
+              <TextField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: "#d9e3ea",
+                    ...commonStyles,
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#9ca3af",
+                    ...commonStyles,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#374151",
+                      borderRadius: "12px",
+                      borderWidth: "2px",
+                    },
+                    "&:hover fieldset": { borderColor: "#5c5cfe" },
+                    "&.Mui-focused fieldset": { borderColor: "#5c5cfe" },
+                  },
+                }}
+              />
+              <TextField
+                label="Mot de passe"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: "#d9e3ea",
+                    ...commonStyles,
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#9ca3af",
+                    ...commonStyles,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#374151",
+                      borderRadius: "12px",
+                      borderWidth: "2px",
+                    },
+                    "&:hover fieldset": { borderColor: "#5c5cfe" },
+                    "&.Mui-focused fieldset": { borderColor: "#5c5cfe" },
+                  },
+                }}
+              />
+              <TextField
+                label="Confirmation mot de passe"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: "#d9e3ea",
+                    ...commonStyles,
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#9ca3af",
+                    ...commonStyles,
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#374151",
+                      borderRadius: "12px",
+                      borderWidth: "2px",
+                    },
+                    "&:hover fieldset": { borderColor: "#5c5cfe" },
+                    "&.Mui-focused fieldset": { borderColor: "#5c5cfe" },
+                  },
+                }}
+              />
+
+              <motion.div
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    ...commonStyles,
+                    textTransform: "none",
+                    background:
+                      "linear-gradient(135deg, #5c5cfe 0%, #4a4bff 100%)",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    borderRadius: "16px",
+                    py: 1.5,
+                    mt: 2,
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #4a4bff 0%, #3939ff 100%)",
+                    },
+                  }}
+                >
+                  {loading ? "Chargement..." : "S'inscrire"}
+                </Button>
+              </motion.div>
+
+              <Typography
+                textAlign="center"
+                sx={{ ...commonStyles, color: "#9ca3af", mt: 2 }}
+              >
+                Vous avez déjà un compte ?{" "}
+                <Link to="/signin" style={{ color: "#5c5cfe" }}>
+                  Se connecter
+                </Link>
+              </Typography>
+            </Box>
+          </motion.div>
+        </Container>
+      </motion.div>
+
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         open={toast.open}
-        message={toast.message}
         autoHideDuration={3000}
-        onClose={handleClose}
+        onClose={() => setToast({ open: false, message: "" })}
       >
-        <Alert
-          onClose={handleClose}
-          severity='error'
-          variant='filled'
-          sx={{ width: "100%" }}
-        >
+        <Alert severity="error" variant="filled" sx={{ width: "100%" }}>
           {toast.message}
         </Alert>
       </Snackbar>
-    </>
-  )
+    </Layout>
+  );
 }
-
-export default Signup
