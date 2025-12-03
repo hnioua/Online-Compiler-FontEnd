@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { fileInfo } from "../../App";
-
+import { PlayArrow } from "@mui/icons-material";
+import { IconButton } from "@mui/material";
 const socket = io("http://localhost:5000");
 
 const Terminal = () => {
@@ -57,12 +58,9 @@ const Terminal = () => {
       {/* HEADER */}
       <header className="w-full min-h-[35px] border-b border-[#363e55] flex items-center justify-between px-3">
         <span className="font-semibold text-lg">Console</span>
-        <button
-          onClick={handleRun}
-          className="text-sm bg-green-600 px-3 py-1 rounded hover:bg-green-700"
-        >
-          ▶️ Run
-        </button>
+        <IconButton color="inherit" size="small" onClick={handleRun}>
+          Run <PlayArrow />
+        </IconButton>
       </header>
 
       {/* TERMINAL */}

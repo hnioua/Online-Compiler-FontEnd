@@ -148,9 +148,9 @@ const Editor = ({ files }) => {
           >
             <Download />
           </IconButton>
-          <IconButton color="inherit" size="small" onClick={CompileCode}>
+          {/* <IconButton color="inherit" size="small" onClick={CompileCode}>
             <PlayArrow />
-          </IconButton>
+          </IconButton> */}
         </div>
       </header>
       <div className="w-full h-full">
